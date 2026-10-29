@@ -12,6 +12,10 @@ A escola ia começar a cobrar as mensalidades por boleto e controlava tudo à m�
 - quem está com boleto vencido e quanto deve com multa e juros;
 - se o caixa fecha positivo no fim do ano.
 
+## Resultado
+
+A escola não tinha planilha. A diretora fazia apenas uma organização básica das contas. Com a planilha, que já está em uso, ela passou a ver mês a mês tudo o que entra e tudo o que a escola gasta.
+
 ## O que a planilha faz sozinha
 
 | Aba | O que acontece |
