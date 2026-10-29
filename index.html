@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Financeiro Escolar</title>
+<meta name="description" content="Dashboard financeiro de uma escola de educação infantil, alimentado por uma planilha automatizada. Dados fictícios.">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1d2433;--muted:#667085;--line:#e4e7ec;--rec:#2f6fde;--desp:#e0664a;--ok:#1f9d6b;--warn:#d99a1c;--bad:#d64545;--saldo:#7a4fd6}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#181c24;--ink:#e8eaf0;--muted:#98a2b3;--line:#2a303b;--rec:#5b8ff0;--desp:#f08466;--ok:#38c48e;--warn:#e9b44c;--bad:#ef6a6a;--saldo:#a487ef}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:24px;margin:0}
+.sub{color:var(--muted);margin:2px 0 0}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.alert{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--bad);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .h{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+@media (max-width:860px){.grid{grid-template-columns:1fr}}
+.card h2{font-size:15px;margin:0 0 10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--muted);font-size:11px}
+.hbar{display:grid;grid-template-columns:110px 1fr 84px;gap:8px;align-items:center;font-size:13px;margin:6px 0}
+.hbar .t{height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+.hbar .t span{display:block;height:100%;background:var(--desp);border-radius:6px}
+.hbar .n{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+.pill{white-space:nowrap;font-size:12px;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad);font-weight:600}
+.scroll{overflow-x:auto}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:6px;opacity:0;transition:opacity .1s;white-space:nowrap}
+footer{color:var(--muted);font-size:13px;margin-top:20px}
+footer a{color:var(--rec)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1 id="t"></h1>
+    <p class="sub" id="s"></p>
+  </div>
+  <span class="tag">Dados fictícios · projeto de portfólio</span>
+</header>
+<div class="alert" id="alert"></div>
+<section class="kpis" id="kpis"></section>
+<div class="grid">
+  <div class="card"><h2>Receitas x despesas por mês</h2>
+    <div class="legend"><span><i style="background:var(--rec)"></i>Receitas</span><span><i style="background:var(--desp)"></i>Despesas</span><span><i style="background:var(--saldo)"></i>Saldo acumulado</span></div>
+    <svg id="ch1" viewBox="0 0 720 280" role="img" aria-label="Gráfico de receitas e despesas por mês"></svg></div>
+  <div class="card"><h2>Despesas pagas por categoria</h2><div id="cats"></div></div>
+</div>
+<div class="grid">
+  <div class="card"><h2>Boletos vencidos <span class="h" style="color:var(--muted);font-weight:400">(valor com multa e juros)</span></h2><div class="scroll"><table id="venc"></table></div></div>
+  <div class="card"><h2>Alunos por turma</h2><div id="turmas"></div>
+    <h2 style="margin-top:16px">Cadastros sem CPF do responsável</h2><div id="cpf" style="font-size:13px"></div></div>
+</div>
+<div class="card"><h2>Status dos boletos por mês</h2>
+  <div class="legend"><span><i style="background:var(--ok)"></i>Pago</span><span><i style="background:var(--bad)"></i>Vencido</span><span><i style="background:var(--warn)"></i>A vencer</span><span><i style="background:var(--muted)"></i>Cancelado</span></div>
+  <svg id="ch2" viewBox="0 0 1000 190" role="img" aria-label="Status dos boletos por mês"></svg></div>
+<footer>Os números saem da planilha financeira automatizada que eu criei (abas Alunos, Boletos, Despesas e Resumo). Nomes, valores e a escola são inventados. Feito por <a href="https://github.com/Kayla-M1">Kayla Michelle Santos</a>.</footer>
+</div>
+<div class="tip" id="tip"></div>
+<script>
+const D = {"escola": "Escola Modelo (dados fictícios)", "ano": 2026, "ref": "29/10/2026", "meses": [{"m": "Jan", "prev": 16242, "rec": 16364.8973333333, "outras": 9460, "receita": 25824.8973333333, "desp": 18704.21, "tarifa": 57.27, "res": 7063.41733333334, "saldo": 13063.4173333333}, {"m": "Fev", "prev": 16242, "rec": 16388.8873333333, "outras": 1900, "receita": 18288.8873333333, "desp": 18038.37, "tarifa": 57.27, "res": 193.24733333333, "saldo": 13256.6646666667}, {"m": "Mar", "prev": 16952, "rec": 17130.05, "outras": 250, "receita": 17380.05, "desp": 16612.22, "tarifa": 59.76, "res": 708.069999999998, "saldo": 13964.7346666667}, {"m": "Abr", "prev": 16332, "rec": 16464.14, "outras": 0, "receita": 16464.14, "desp": 16606.01, "tarifa": 57.27, "res": -199.140000000003, "saldo": 13765.5946666667}, {"m": "Mai", "prev": 16952, "rec": 17119.7666666667, "outras": 0, "receita": 17119.7666666667, "desp": 16289.93, "tarifa": 59.76, "res": 770.076666666666, "saldo": 14535.6713333333}, {"m": "Jun", "prev": 16952, "rec": 17116.03, "outras": 3400, "receita": 20516.03, "desp": 17907.7, "tarifa": 59.76, "res": 2548.57, "saldo": 17084.2413333333}, {"m": "Jul", "prev": 16082, "rec": 16272.47, "outras": 0, "receita": 16272.47, "desp": 16120.08, "tarifa": 57.27, "res": 95.1200000000012, "saldo": 17179.3613333333}, {"m": "Ago", "prev": 16082, "rec": 15298.75, "outras": 1100, "receita": 16398.75, "desp": 16945.7, "tarifa": 54.78, "res": -601.730000000001, "saldo": 16577.6313333333}, {"m": "Set", "prev": 16082, "rec": 14467.0593333333, "outras": 0, "receita": 14467.0593333333, "desp": 16589.77, "tarifa": 52.29, "res": -2175.00066666667, "saldo": 14402.6306666667}, {"m": "Out", "prev": 16082, "rec": 13073.31, "outras": 1250, "receita": 14323.31, "desp": 16369.9, "tarifa": 47.31, "res": -2093.9, "saldo": 12308.7306666667}, {"m": "Nov", "prev": 16082, "rec": 0, "outras": 0, "receita": 0, "desp": 0, "tarifa": 0, "res": 0, "saldo": 12308.7306666667}, {"m": "Dez", "prev": 16082, "rec": 0, "outras": 0, "receita": 0, "desp": 0, "tarifa": 0, "res": 0, "saldo": 12308.7306666667}], "ind": {"Alunos ativos": 24, "Alunos no Maternal 2": 6, "Alunos no Maternal 3": 8, "Alunos no 1º Período": 6, "Alunos no 2º Período": 4, "Alunos no Judô": 6, "Alunos no Balé": 5, "Receita prevista por mês": 16952, "Boletos pagos": 226, "Boletos vencidos": 7, "Valor vencido (atualizado)": 5832.85666666667, "Inadimplência (% do vencido)": 0.0344512195121951, "Despesas atrasadas": 690, "Despesas fixas pagas no ano": 161683.89, "Despesas variáveis pagas no ano": 3670, "Margem do ano": 0.0356314016300461}, "vencidos": [{"aluno": "Elisa Esteves (fictício)", "resp": "Zilda Esteves", "mes": "Ago", "venc": "10/08/2026", "dias": 80, "valor": 858.27}, {"aluno": "Elisa Esteves (fictício)", "resp": "Zilda Esteves", "mes": "Set", "venc": "10/09/2026", "dias": 49, "valor": 849.79}, {"aluno": "Elisa Esteves (fictício)", "resp": "Zilda Esteves", "mes": "Out", "venc": "10/10/2026", "dias": 19, "valor": 841.59}, {"aluno": "Valentina Zanetti (fictício)", "resp": "Gisele Zanetti", "mes": "Out", "venc": "10/10/2026", "dias": 19, "valor": 656.85}, {"aluno": "Gabriel Nogueira (fictício)", "resp": "Yuri Nogueira", "mes": "Out", "venc": "10/10/2026", "dias": 19, "valor": 728.7}, {"aluno": "Lucas Sales (fictício)", "resp": "Sérgio Sales", "mes": "Set", "venc": "10/09/2026", "dias": 49, "valor": 953.43}, {"aluno": "Lucas Sales (fictício)", "resp": "Sérgio Sales", "mes": "Out", "venc": "10/10/2026", "dias": 19, "valor": 944.23}], "semcpf": ["Laura Holanda (fictício)", "Lucas Sales (fictício)"], "categorias": {"Salários": 89000, "Aluguel": 32000, "Encargos": 14500, "Impostos": 9800, "Outros": 8150, "Energia": 6984.89, "Manutenção": 3180, "Material": 3020, "Água": 1600, "Internet": 1299.0, "Marketing": 650}, "status": {"Jan": {"Pago": 23}, "Fev": {"Pago": 23}, "Mar": {"Pago": 24}, "Abr": {"Pago": 23, "Cancelado": 1}, "Mai": {"Pago": 24}, "Jun": {"Pago": 24}, "Jul": {"Pago": 23}, "Ago": {"Pago": 22, "Vencido": 1}, "Set": {"Pago": 21, "Vencido": 2}, "Out": {"Pago": 19, "Vencido": 4}, "Nov": {"A vencer": 23}, "Dez": {"A vencer": 23}}, "turmas": {"Maternal 2": 6, "Maternal 3": 8, "1º Período": 6, "2º Período": 4, "Judô": 6, "Balé": 5}};
+const brl = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const $ = id => document.getElementById(id);
+const tip=$('tip');
+function showTip(e,txt){tip.textContent=txt;tip.style.opacity=1;tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY-28)+'px'}
+function hideTip(){tip.style.opacity=0}
+$('t').textContent='Painel financeiro – '+D.escola;
+$('s').textContent='Ano letivo '+D.ano+' · posição em '+D.ref;
+const I=D.ind, tot=D.meses.reduce((a,m)=>({r:a.r+m.receita,d:a.d+m.desp+m.tarifa}),{r:0,d:0});
+const saldo=D.meses[D.meses.length-1].saldo;
+$('alert').textContent='⚠ '+I['Boletos vencidos']+' boletos vencidos ('+brl(I['Valor vencido (atualizado)'])+') e '+brl(I['Despesas atrasadas'])+' em contas atrasadas';
+const k=[['Receita no ano',brl(tot.r),'boletos + outras receitas'],['Despesas no ano',brl(tot.d),'inclui tarifas de boleto'],['Saldo em caixa',brl(saldo),'saldo inicial + resultado'],['Alunos ativos',I['Alunos ativos'],brl(I['Receita prevista por mês'])+' previstos/mês'],['Inadimplência',(I['Inadimplência (% do vencido)']*100).toFixed(1).replace('.',',')+'%',I['Boletos pagos']+' boletos pagos'],['Margem do ano',(I['Margem do ano']*100).toFixed(1).replace('.',',')+'%','resultado ÷ receita']];
+$('kpis').innerHTML=k.map(x=>`<div class="kpi"><div class="l">${x[0]}</div><div class="v">${x[1]}</div><div class="h">${x[2]}</div></div>`).join('');
+
+// gráfico 1
+(function(){const s=$('ch1'),W=720,H=280,P={l:52,r:10,t:10,b:28};
+ const M=D.meses, max=Math.max(...M.map(m=>Math.max(m.receita,m.desp+m.tarifa,m.saldo)))*1.1;
+ const y=v=>H-P.b-(v/max)*(H-P.t-P.b), bw=(W-P.l-P.r)/M.length;
+ let g='';for(let i=0;i<=4;i++){const v=max/4*i;g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${P.l-6}" y="${y(v)+4}" text-anchor="end">${Math.round(v/1000)}k</text>`}
+ M.forEach((m,i)=>{const x=P.l+i*bw,w=bw*0.32,d=m.desp+m.tarifa;
+  g+=`<rect x="${x+bw*0.16}" y="${y(m.receita)}" width="${w}" height="${H-P.b-y(m.receita)}" rx="2" fill="var(--rec)" data-t="${m.m}: receitas ${brl(m.receita)}"/>`;
+  g+=`<rect x="${x+bw*0.16+w+2}" y="${y(d)}" width="${w}" height="${H-P.b-y(d)}" rx="2" fill="var(--desp)" data-t="${m.m}: despesas ${brl(d)}"/>`;
+  g+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle">${m.m}</text>`});
+ const pts=M.map((m,i)=>`${P.l+i*bw+bw/2},${y(m.saldo)}`).join(' ');
+ g+=`<polyline points="${pts}" fill="none" stroke="var(--saldo)" stroke-width="2.5"/>`;
+ M.forEach((m,i)=>g+=`<circle cx="${P.l+i*bw+bw/2}" cy="${y(m.saldo)}" r="4" fill="var(--saldo)" data-t="${m.m}: saldo ${brl(m.saldo)}"/>`);
+ s.innerHTML=g;})();
+
+// categorias
+(function(){const c=D.categorias,max=Math.max(...Object.values(c));
+ $('cats').innerHTML=Object.entries(c).map(([k,v])=>`<div class="hbar"><span>${k}</span><div class="t"><span style="width:${v/max*100}%"></span></div><span class="n">${brl(v)}</span></div>`).join('');})();
+
+// vencidos
+$('venc').innerHTML='<tr><th>Aluno</th><th>Mês</th><th>Vencimento</th><th>Atraso</th><th class="num">Valor</th></tr>'+
+ D.vencidos.map(v=>`<tr><td>${v.aluno.replace(' (fictício)','')}</td><td>${v.mes}</td><td>${v.venc}</td><td><span class="pill">${v.dias} dias</span></td><td class="num">${brl(v.valor)}</td></tr>`).join('');
+
+// turmas
+(function(){const t=D.turmas,max=Math.max(...Object.values(t));
+ $('turmas').innerHTML=Object.entries(t).map(([k,v])=>`<div class="hbar"><span>${k}</span><div class="t"><span style="width:${v/max*100}%;background:var(--rec)"></span></div><span class="n">${v}</span></div>`).join('');})();
+$('cpf').innerHTML=D.semcpf.length?D.semcpf.map(n=>'• '+n.replace(' (fictício)','')).join('<br>'):'Nenhum';
+
+// gráfico 2
+(function(){const s=$('ch2'),W=1000,H=190,P={l:30,r:10,t:8,b:26},ms=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+ const cols={'Pago':'var(--ok)','Vencido':'var(--bad)','A vencer':'var(--warn)','Cancelado':'var(--muted)'};
+ const max=Math.max(...ms.map(m=>Object.values(D.status[m]||{}).reduce((a,b)=>a+b,0)));
+ const bw=(W-P.l-P.r)/12,sc=(H-P.t-P.b)/max;let g='';
+ ms.forEach((m,i)=>{let y0=H-P.b;const x=P.l+i*bw+bw*0.2;
+  for(const k of ['Pago','Cancelado','Vencido','A vencer']){const n=(D.status[m]||{})[k]||0;if(!n)continue;const h=n*sc;y0-=h;
+   g+=`<rect x="${x}" y="${y0}" width="${bw*0.6}" height="${h}" fill="${cols[k]}" data-t="${m}: ${n} ${k.toLowerCase()}"/>`}
+  g+=`<text x="${x+bw*0.3}" y="${H-8}" text-anchor="middle">${m}</text>`});
+ s.innerHTML=g;})();
+
+document.querySelectorAll('[data-t]').forEach(el=>{el.addEventListener('mousemove',e=>showTip(e,el.dataset.t));el.addEventListener('mouseleave',hideTip)});
+</script>
+</body>
+</html>
